@@ -78,6 +78,13 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
+
+    /* Custom Grassland Colors (Light Mode) */
+    --grass-0: oklch(0.95 0.02 160);
+    --grass-1: oklch(0.85 0.05 160);
+    --grass-2: oklch(0.75 0.10 160);
+    --grass-3: oklch(0.65 0.15 160);
+    --grass-4: oklch(0.55 0.20 160);
 }
 
 .dark {
@@ -112,6 +119,34 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+
+    /* Custom Grassland Colors (Dark Mode) */
+    --grass-0: oklch(0.20 0.02 160);
+    --grass-1: oklch(0.25 0.05 160);
+    --grass-2: oklch(0.35 0.10 160);
+    --grass-3: oklch(0.45 0.15 160);
+    --grass-4: oklch(0.60 0.20 160);
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+.animate-breathe {
+  animation: breathe 8s ease-in-out infinite;
+}
+
+.bg-grid-pattern {
+  background-image: radial-gradient(circle, var(--grass-1) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+.bg-grass-grid {
+  background-image: 
+    linear-gradient(to right, var(--grass-0) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grass-0) 1px, transparent 1px);
+  background-size: 16px 16px;
 }
 
 @layer base {
