@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { Github, Mail, Lock, Sparkles } from "lucide-react";
+import { Github, Mail, Lock, Sparkles, AlertCircle, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -54,19 +56,66 @@ const ContributionGridBackground = () => {
 };
 
 export default function LoginPage() {
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Dummy login handler
-    console.log("Login submitted:", { email, password });
-    setTimeout(() => {
+    setError(null);
+    setMessage(null);
+
+    try {
+      if (isSignUp) {
+        // 新規登録
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+          },
+        });
+        if (error) throw error;
+        setMessage("確認メールを送信しました。メールボックスをチェックしてください。");
+      } else {
+        // ログイン
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        navigate("/dashboard");
+      }
+    } catch (err: any) {
+      setError(err.message || "認証に失敗しました");
+    } finally {
       setIsLoading(false);
-      alert("Grassland Notebookへようこそ！");
-    }, 1500);
+    }
+  };
+
+  const handleGitHubLogin = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "github",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message || "GitHubログインに失敗しました");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -97,13 +146,28 @@ export default function LoginPage() {
           <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--grass-2)] to-transparent opacity-50" />
           
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl text-center font-semibold">サインイン</CardTitle>
+            <CardTitle className="text-xl text-center font-semibold">
+              {isSignUp ? "アカウント作成" : "サインイン"}
+            </CardTitle>
             <CardDescription className="text-center">
-              あなたの活動記録へアクセス
+              {isSignUp ? "新しい庭園を始めましょう" : "あなたの活動記録へアクセス"}
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-5">
-            <form onSubmit={handleSubmit} className="grid gap-4">
+            {error && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2 animate-in slide-in-from-top-1">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <p>{error}</p>
+              </div>
+            )}
+            {message && (
+              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs flex items-center gap-2 animate-in slide-in-from-top-1">
+                <Sparkles className="w-4 h-4 shrink-0" />
+                <p>{message}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleAuth} className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email" className="text-xs uppercase tracking-wider text-muted-foreground/80">メールアドレス</Label>
                 <div className="relative">
@@ -142,10 +206,10 @@ export default function LoginPage() {
                 {isLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    認証中...
+                    処理中...
                   </div>
                 ) : (
-                  "ログイン"
+                  isSignUp ? "アカウント作成" : "ログイン"
                 )}
               </Button>
             </form>
@@ -165,16 +229,23 @@ export default function LoginPage() {
               variant="outline" 
               type="button" 
               className="w-full border-border/50 hover:bg-muted/50 transition-colors"
-              onClick={() => console.log("GitHub Auth Start")}
+              onClick={handleGitHubLogin}
+              disabled={isLoading}
             >
               <Github className="mr-2 h-4 w-4" />
               GitHubでログイン
             </Button>
           </CardContent>
           <CardFooter className="flex flex-col gap-4 text-sm text-muted-foreground border-t border-border/20 pt-6">
-            <div className="flex items-center justify-between w-full">
-              <a href="#" className="hover:text-[var(--grass-3)] transition-colors">パスワードをお忘れですか？</a>
-              <a href="#" className="text-foreground hover:text-[var(--grass-3)] transition-colors font-medium">新規登録</a>
+            <div className="flex items-center justify-center w-full">
+              <button 
+                type="button"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-foreground hover:text-[var(--grass-3)] transition-colors font-medium flex items-center gap-1"
+              >
+                {isSignUp ? "既にアカウントをお持ちですか？ ログイン" : "新しくアカウントを作成する"}
+                <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
           </CardFooter>
         </Card>
