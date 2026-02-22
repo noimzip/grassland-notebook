@@ -2,9 +2,18 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Sparkles, LogOut, User, LayoutDashboard, Github, CalendarDays } from "lucide-react";
+import { 
+  Sparkles, 
+  LogOut, 
+  User, 
+  LayoutDashboard, 
+  Github, 
+  CalendarDays, 
+  History 
+} from "lucide-react";
 import { GitHubAnalyzer } from "./github-analyzer";
 import { YearlyAnalysisDashboard } from "./yearly-analysis-dashboard";
+import { ContributionTimeline } from "./contribution-timeline";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function DashboardPage() {
@@ -101,20 +110,23 @@ export default function DashboardPage() {
 
           <Tabs defaultValue="current" className="space-y-6">
             <div className="flex justify-center">
-              <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsList className="grid w-full max-w-[600px] grid-cols-3">
                 <TabsTrigger value="current" className="gap-2">
                   <Github className="w-4 h-4" />
-                  Current Year
+                  <span className="hidden sm:inline">Current Year</span>
                 </TabsTrigger>
                 <TabsTrigger value="history" className="gap-2">
                   <CalendarDays className="w-4 h-4" />
-                  Yearly History
+                  <span className="hidden sm:inline">Yearly Comparison</span>
+                </TabsTrigger>
+                <TabsTrigger value="timeline" className="gap-2">
+                  <History className="w-4 h-4" />
+                  <span className="hidden sm:inline">Full Timeline</span>
                 </TabsTrigger>
               </TabsList>
             </div>
 
             <TabsContent value="current" className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
-              {/* GitHub Integration Section */}
               <section className="space-y-4">
                 <div className="flex items-center gap-2 px-1 text-muted-foreground font-semibold uppercase tracking-wider text-xs">
                   <Github className="w-3 h-3" />
@@ -124,8 +136,12 @@ export default function DashboardPage() {
               </section>
             </TabsContent>
 
-            <TabsContent value="history" className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <TabsContent value="history" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <YearlyAnalysisDashboard />
+            </TabsContent>
+
+            <TabsContent value="timeline" className="animate-in fade-in slide-in-from-right-4 duration-500">
+              <ContributionTimeline />
             </TabsContent>
           </Tabs>
         </main>
