@@ -7,10 +7,13 @@ import {
   TrendingUp, 
   AlertCircle,
   BarChart2,
+  Lock,
   RefreshCw,
   ShieldCheck
 } from "lucide-react";
 import { useGitHubAuth } from "@/hooks/use-github-auth";
+import { SettingsPage } from "./settings-page";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { GitHubSettings } from "./github-settings";
 import { GitHubHeatmap } from "./github-heatmap";
 import { ActivityDistributionChart } from "./activity-distribution-chart";
@@ -113,7 +116,7 @@ export function GitHubAnalyzer() {
               リアルタイムの活動データを表示するには、ユーザー名とアクセストークンの設定が必要です。
             </p>
           </div>
-          <GitHubSettings />
+          <SettingsPage />
         </CardContent>
       </Card>
     );
