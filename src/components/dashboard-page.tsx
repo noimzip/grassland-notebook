@@ -15,6 +15,8 @@ import { GitHubAnalyzer } from "./github-analyzer";
 import { YearlyAnalysisDashboard } from "./yearly-analysis-dashboard";
 import { ContributionTimeline } from "./contribution-timeline";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SettingsPage } from "./settings-page";
+import { ThemeToggle } from "./theme-toggle";
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
@@ -83,6 +85,10 @@ export default function DashboardPage() {
             <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground mr-4">
               <User className="w-4 h-4" />
               <span>{user?.email || "ゲストユーザー"}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <SettingsPage />
             </div>
             <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 border-border/50">
               <LogOut className="w-4 h-4" />

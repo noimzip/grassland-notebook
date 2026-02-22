@@ -13,7 +13,7 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { useGitHubAuth } from "@/hooks/use-github-auth";
-import { GitHubSettings } from "./github-settings";
+import { SettingsPage } from "./settings-page";
 import { GitHubHeatmap } from "./github-heatmap";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,7 +106,7 @@ export function GitHubAnalyzer() {
               リアルタイムの活動データを表示するには、ユーザー名とアクセストークンの設定が必要です。
             </p>
           </div>
-          <GitHubSettings />
+          <SettingsPage />
         </CardContent>
       </Card>
     );
@@ -123,7 +123,7 @@ export function GitHubAnalyzer() {
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Connected as</p>
             <div className="flex items-center gap-2">
               <p className="text-sm font-bold">{storedUser}</p>
-              <GitHubSettings />
+              <SettingsPage />
             </div>
           </div>
         </div>
@@ -155,7 +155,7 @@ export function GitHubAnalyzer() {
             <p className="font-semibold">データの同期に失敗しました</p>
             <p className="text-xs opacity-80 mt-0.5">{error}</p>
           </div>
-          <GitHubSettings />
+          <SettingsPage />
         </div>
       )}
 
