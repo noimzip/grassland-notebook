@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
-const STORAGE_KEY_USER = "grassland_github_username";
-const STORAGE_KEY_TOKEN = "grassland_github_token";
 const STORAGE_KEY_PERSISTENCE = "grassland_persistence_enabled";
 
 export interface SettingsState {
   username: string;
   token: string;
+  avatarUrl: string;
   isPersistenceEnabled: boolean;
   isConfigured: boolean;
   isValidating: boolean;
@@ -18,34 +18,47 @@ export function useSettings() {
   const [settings, setSettings] = useState<SettingsState>({
     username: "",
     token: "",
+    avatarUrl: "",
     isPersistenceEnabled: true,
     isConfigured: false,
     isValidating: false,
     tokenStatus: "idle",
   });
 
-  // Initial load
-  useEffect(() => {
-    const username = localStorage.getItem(STORAGE_KEY_USER) || "";
-    const token = localStorage.getItem(STORAGE_KEY_TOKEN) || "";
-    const persistence = localStorage.getItem(STORAGE_KEY_PERSISTENCE) !== "false"; // Default to true
+  // Supabaseから情報を取得
+  const loadFromSupabase = async () => {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (username && token) {
-      setSettings((prev) => ({
-        ...prev,
-        username,
-        token,
-        isPersistenceEnabled: persistence,
-        isConfigured: true,
-      }));
-      // Auto-validate if configured
-      validateToken(token);
-    } else {
-      setSettings((prev) => ({
-        ...prev,
-        isPersistenceEnabled: persistence,
-      }));
+    if (sessionError || userError || !session || !user) {
+      return;
     }
+
+    const username = user.user_metadata.user_name || user.user_metadata.full_name || "";
+    const avatarUrl = user.user_metadata.avatar_url || "";
+    const token = session.provider_token || ""; // OAuth provider token
+    const persistence = localStorage.getItem(STORAGE_KEY_PERSISTENCE) !== "false";
+
+    setSettings((prev) => ({
+      ...prev,
+      username,
+      token,
+      avatarUrl,
+      isPersistenceEnabled: persistence,
+      isConfigured: !!token,
+      tokenStatus: token ? "valid" : "idle",
+    }));
+  };
+
+  useEffect(() => {
+    loadFromSupabase();
+
+    // 認証状態の変化を監視
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      loadFromSupabase();
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const validateToken = async (tokenToValidate: string) => {
@@ -75,98 +88,61 @@ export function useSettings() {
     }
   };
 
-  const updateSettings = async (username: string, token: string, persistence: boolean) => {
-    const isValid = await validateToken(token);
-    
-    if (!isValid) {
-      toast.error("GitHubトークンが無効です。設定を確認してください。");
-      return false;
-    }
-
-    if (persistence) {
-      localStorage.setItem(STORAGE_KEY_USER, username);
-      localStorage.setItem(STORAGE_KEY_TOKEN, token);
-      localStorage.setItem(STORAGE_KEY_PERSISTENCE, "true");
-    } else {
-      localStorage.removeItem(STORAGE_KEY_USER);
-      localStorage.removeItem(STORAGE_KEY_TOKEN);
-      localStorage.setItem(STORAGE_KEY_PERSISTENCE, "false");
-    }
-
-    setSettings({
-      username,
-      token,
-      isPersistenceEnabled: persistence,
-      isConfigured: true,
-      isValidating: false,
-      tokenStatus: "valid",
+  const signInWithGitHub = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: {
+        scopes: "read:user",
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
     });
 
-    toast.success("設定を保存しました。");
+    if (error) {
+      toast.error("GitHub連携に失敗しました: " + error.message);
+      return false;
+    }
     return true;
   };
 
   const setPersistence = (enabled: boolean) => {
     localStorage.setItem(STORAGE_KEY_PERSISTENCE, enabled.toString());
-    
-    if (!enabled) {
-      // If disabling persistence, clear the sensitive data from storage immediately
-      // but keep it in state for the current session
-      localStorage.removeItem(STORAGE_KEY_USER);
-      localStorage.removeItem(STORAGE_KEY_TOKEN);
-    } else if (settings.username && settings.token) {
-      // If enabling persistence, save current state to storage
-      localStorage.setItem(STORAGE_KEY_USER, settings.username);
-      localStorage.setItem(STORAGE_KEY_TOKEN, settings.token);
-    }
-
     setSettings((prev) => ({ ...prev, isPersistenceEnabled: enabled }));
     toast.info(`データのローカル保存を${enabled ? "有効" : "無効"}にしました。`);
   };
 
-  const resetAllData = () => {
-    localStorage.removeItem(STORAGE_KEY_USER);
-    localStorage.removeItem(STORAGE_KEY_TOKEN);
+  const resetAllData = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem(STORAGE_KEY_PERSISTENCE);
-    // Clear all other potential app data if needed
-    // localStorage.clear(); // Use with caution
 
     setSettings({
       username: "",
       token: "",
+      avatarUrl: "",
       isPersistenceEnabled: true,
       isConfigured: false,
       isValidating: false,
       tokenStatus: "idle",
     });
 
-    toast.success("すべての設定とデータを初期化しました。");
+    toast.success("ログアウトし、すべての設定を初期化しました。");
   };
 
-  const disconnectGitHub = () => {
-    localStorage.removeItem(STORAGE_KEY_USER);
-    localStorage.removeItem(STORAGE_KEY_TOKEN);
-    
-    setSettings((prev) => ({
-      ...prev,
-      username: "",
-      token: "",
-      isConfigured: false,
-      tokenStatus: "idle",
-    }));
-
-    toast.info("GitHub連携を解除しました。");
+  const disconnectGitHub = async () => {
+    // OAuthの場合、トークンのみを無効化することは難しいため、基本的にはログアウトを促す
+    await supabase.auth.signOut();
+    toast.info("GitHub連携を解除（ログアウト）しました。");
   };
 
   return {
     ...settings,
-    updateSettings,
+    signInWithGitHub,
     setPersistence,
     resetAllData,
     disconnectGitHub,
     validateToken,
     // Aliases for backward compatibility
-    saveAuth: updateSettings,
+    saveAuth: async () => {}, // 手動保存は不要に
     clearAuth: disconnectGitHub,
   };
 }
+

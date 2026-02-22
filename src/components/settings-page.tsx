@@ -14,7 +14,8 @@ import {
   ShieldAlert,
   Save,
   LogOut,
-  Database
+  Database,
+  RefreshCw
 } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
 import { Button } from "@/components/ui/button";
@@ -59,39 +60,21 @@ export function SettingsPage() {
   const { 
     username: storedUser, 
     token: storedToken, 
+    avatarUrl: storedAvatar,
     isConfigured, 
     tokenStatus,
     isPersistenceEnabled,
-    updateSettings,
+    signInWithGitHub,
     setPersistence,
     resetAllData,
     disconnectGitHub,
-    validateToken
   } = useSettings();
 
-  const [username, setUsername] = useState(storedUser || "");
-  const [token, setToken] = useState(storedToken || "");
-  const [showToken, setShowToken] = useState(false);
   const [open, setOpen] = useState(false);
 
-  // Use effective values (state or stored)
-  const currentUsername = username || storedUser;
-  const currentToken = token || storedToken;
-
-  const handleSave = async () => {
-    const success = await updateSettings(username, token, isPersistenceEnabled);
-    if (success) {
-      // Keep state in sync or let the hook handle it
-    }
-  };
-
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (newOpen) {
-      setUsername(storedUser);
-      setToken(storedToken);
-    }
-  };
+  // Use effective values
+  const currentUsername = storedUser;
+  const currentAvatar = storedAvatar;
 
   const getStatusBadge = () => {
     switch (tokenStatus) {
@@ -106,7 +89,7 @@ export function SettingsPage() {
         return (
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-xs font-medium">
             <AlertTriangle className="w-3.5 h-3.5" />
-            無効なトークン
+            期限切れまたは無効
           </div>
         );
       case "checking":
@@ -121,7 +104,7 @@ export function SettingsPage() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="rounded-full">
           <Settings className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
@@ -176,22 +159,19 @@ export function SettingsPage() {
                     <div className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-muted/30">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20 overflow-hidden shadow-inner">
-                          {isConfigured && currentUsername ? (
+                          {isConfigured && currentAvatar ? (
                             <img 
-                              src={`https://github.com/${currentUsername}.png`} 
+                              src={currentAvatar} 
                               alt={currentUsername}
                               className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${currentUsername}&background=0D8ABC&color=fff`;
-                              }}
                             />
                           ) : (
                             <Github className="w-6 h-6 text-muted-foreground" />
                           )}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold">{isConfigured ? currentUsername : "未ログイン"}</p>
-                          <p className="text-[10px] text-muted-foreground">{isConfigured ? "GitHub コントリビューター" : "連携していません"}</p>
+                          <p className="text-sm font-semibold">{isConfigured ? currentUsername : "未連携"}</p>
+                          <p className="text-[10px] text-muted-foreground">{isConfigured ? "GitHub OAuth 連携中" : "連携していません"}</p>
                         </div>
                       </div>
                       {getStatusBadge()}
@@ -200,9 +180,9 @@ export function SettingsPage() {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
-                          <Label className="text-sm font-medium">データのローカル保存</Label>
+                          <Label className="text-sm font-medium">セッションの保持</Label>
                           <p className="text-[10px] text-muted-foreground">
-                            ブラウザを閉じても情報を保持します。
+                            ブラウザを閉じてもログイン状態を維持します。
                           </p>
                         </div>
                         <Switch 
@@ -220,73 +200,54 @@ export function SettingsPage() {
                 <Card className="border-border/50 bg-background/50 backdrop-blur-sm">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Lock className="w-4 h-4 text-primary" />
-                      認証設定
+                      <Github className="w-4 h-4 text-primary" />
+                      GitHub 連携
                     </CardTitle>
                     <CardDescription className="text-xs">
-                      GitHub APIにアクセスするための情報を設定します。
+                      ボタンをクリックしてGitHubと連携します。
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="gh-username" className="text-xs font-medium px-1">GitHub ユーザー名</Label>
-                      <Input
-                        id="gh-username"
-                        placeholder="octocat"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="bg-muted/30 border-border/50 h-10 transition-all focus:bg-background focus:ring-1 ring-primary/20"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <div className="flex justify-between items-center px-1">
-                        <Label htmlFor="gh-token" className="text-xs font-medium">Personal Access Token (Classic)</Label>
-                        <a 
-                          href="https://github.com/settings/tokens/new?scopes=read:user&description=Grassland%20Notebook" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-[10px] text-primary font-medium flex items-center gap-1 hover:underline transition-all"
-                        >
-                          トークンを発行 <ExternalLink className="w-2.5 h-2.5" />
-                        </a>
-                      </div>
-                      <div className="relative group">
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
-                          <Lock className="w-4 h-4" />
+                    {!isConfigured ? (
+                      <div className="py-8 text-center space-y-4">
+                        <div className="p-4 bg-muted/50 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
+                          <Github className="w-8 h-8 text-muted-foreground" />
                         </div>
-                        <Input
-                          id="gh-token"
-                          type={showToken ? "text" : "password"}
-                          placeholder="ghp_xxxxxxxxxxxx"
-                          value={token}
-                          onChange={(e) => setToken(e.target.value)}
-                          className="pl-9 pr-10 bg-muted/30 border-border/50 h-10 transition-all focus:bg-background focus:ring-1 ring-primary/20"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowToken(!showToken)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">GitHubと未連携です</p>
+                          <p className="text-xs text-muted-foreground">
+                            コントリビューションデータを取得するには連携が必要です。
+                          </p>
+                        </div>
+                        <Button onClick={signInWithGitHub} className="w-full h-11 gap-2 font-bold shadow-md bg-[#24292f] hover:bg-[#24292f]/90 text-white border-none">
+                          <Github className="w-5 h-5" />
+                          GitHubで連携する
+                        </Button>
                       </div>
-                      <div className="flex items-center gap-1.5 px-1">
-                        <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                        <p className="text-[10px] text-muted-foreground">
-                          `read:user` スコープのみが必要です。
-                        </p>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 flex items-start gap-3">
+                          <ShieldCheck className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">連携済み</p>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                              Supabase OAuthを通じてGitHub APIへの安全なアクセスが確立されています。
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <Button variant="outline" onClick={signInWithGitHub} className="w-full gap-2 text-xs h-9">
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          連携を再更新
+                        </Button>
                       </div>
-                    </div>
+                    )}
 
-                    <div className="pt-2">
-                      <Button 
-                        onClick={handleSave} 
-                        disabled={!username || !token} 
-                        className="w-full h-10 gap-2 shadow-sm font-semibold"
-                      >
-                        <Save className="w-4 h-4" />
-                        設定を保存
-                      </Button>
+                    <div className="p-3 rounded-lg bg-muted/30 border border-border/50 flex items-start gap-2">
+                      <Lock className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div className="text-[10px] text-muted-foreground leading-relaxed">
+                        <strong>セキュリティ:</strong> トークンはブラウザに直接保存されず、Supabaseのセッションを通じて安全に管理されます。`read:user` 以外の権限は要求しません。
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
