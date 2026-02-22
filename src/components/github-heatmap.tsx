@@ -13,6 +13,8 @@ interface GitHubHeatmapProps {
 }
 
 export function GitHubHeatmap({ calendar }: GitHubHeatmapProps) {
+  const total = calendar.totalContributions;
+
   return (
     <TooltipProvider delayDuration={0}>
       <div className="flex flex-col gap-2">
@@ -20,33 +22,57 @@ export function GitHubHeatmap({ calendar }: GitHubHeatmapProps) {
           <div className="flex gap-[3px] min-w-max p-1">
             {calendar.weeks.map((week, weekIndex) => (
               <div key={weekIndex} className="grid grid-rows-7 gap-[3px]">
-                {week.contributionDays.map((day) => (
-                  <Tooltip key={day.date}>
-                    <TooltipTrigger asChild>
-                      <div 
-                        className="w-[10px] h-[10px] sm:w-[11px] sm:h-[11px] rounded-[2px] transition-all hover:ring-2 hover:ring-ring hover:ring-offset-1"
-                        style={{ 
-                          backgroundColor: day.contributionCount > 0 
-                            ? day.color 
-                            : 'rgba(128, 128, 128, 0.1)' 
-                        }}
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      <div className="text-center">
-                        <p className="font-bold">{day.contributionCount} contributions</p>
-                        <p className="text-[10px] opacity-70">
-                          {format(parseISO(day.date), "yyyy/MM/dd")}
-                        </p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
+                {week.contributionDays.map((day) => {
+                  const percentage = total > 0 
+                    ? ((day.contributionCount / total) * 100).toFixed(2) 
+                    : "0.00";
+
+                  return (
+                    <Tooltip key={day.date}>
+                      <TooltipTrigger asChild>
+                        <div 
+                          className="w-[10px] h-[10px] sm:w-[11px] sm:h-[11px] rounded-[2px] transition-all hover:ring-2 hover:ring-ring hover:ring-offset-1 cursor-help"
+                          style={{ 
+                            backgroundColor: day.contributionCount > 0 
+                              ? day.color 
+                              : 'rgba(128, 128, 128, 0.1)' 
+                          }}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent 
+                        side="top" 
+                        className="bg-popover border border-border px-3 py-2 rounded-lg shadow-xl text-xs animate-in fade-in zoom-in duration-200"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div 
+                              className="w-2 h-2 rounded-full" 
+                              style={{ backgroundColor: day.contributionCount > 0 ? day.color : '#888' }} 
+                            />
+                            <p className="font-bold text-popover-foreground">
+                              {format(parseISO(day.date), "yyyy年MM月dd日")}
+                            </p>
+                          </div>
+                          <p className="text-muted-foreground font-medium flex items-baseline gap-1">
+                            <span className="text-foreground text-sm font-black">
+                              {day.contributionCount.toLocaleString()}
+                            </span>
+                            <span className="text-[10px]">contributions</span>
+                            {day.contributionCount > 0 && (
+                              <span className="text-primary font-bold ml-1">({percentage}%)</span>
+                            )}
+                          </p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
               </div>
             ))}
           </div>
         </div>
-        <div className="flex justify-end items-center gap-2 text-[10px] text-muted-foreground">
+        {/* Legend */}
+        <div className="flex justify-end items-center gap-2 text-[11px] font-medium text-muted-foreground">
           <span>Less</span>
           <div className="flex gap-[3px]">
             <div className="w-[10px] h-[10px] rounded-[2px] bg-muted/50" />
