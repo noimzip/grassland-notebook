@@ -9,11 +9,13 @@ import {
   LayoutDashboard, 
   Github, 
   CalendarDays, 
-  History 
+  History,
+  LayoutGrid
 } from "lucide-react";
 import { GitHubAnalyzer } from "./github-analyzer";
 import { YearlyAnalysisDashboard } from "./yearly-analysis-dashboard";
 import { ContributionTimeline } from "./contribution-timeline";
+import { MultiProjectDashboard } from "./multi-project-dashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SettingsPage } from "./settings-page";
 import { ThemeToggle } from "./theme-toggle";
@@ -114,12 +116,16 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          <Tabs defaultValue="current" className="space-y-6">
+          <Tabs defaultValue="multi-project" className="space-y-6">
             <div className="flex justify-center">
-              <TabsList className="grid w-full max-w-[600px] grid-cols-3">
+              <TabsList className="grid w-full max-w-[800px] grid-cols-4">
+                <TabsTrigger value="multi-project" className="gap-2">
+                  <LayoutGrid className="w-4 h-4" />
+                  <span className="hidden sm:inline">My Grassland</span>
+                </TabsTrigger>
                 <TabsTrigger value="current" className="gap-2">
                   <Github className="w-4 h-4" />
-                  <span className="hidden sm:inline">Current Year</span>
+                  <span className="hidden sm:inline">GitHub Sync</span>
                 </TabsTrigger>
                 <TabsTrigger value="history" className="gap-2">
                   <CalendarDays className="w-4 h-4" />
@@ -131,6 +137,10 @@ export default function DashboardPage() {
                 </TabsTrigger>
               </TabsList>
             </div>
+
+            <TabsContent value="multi-project" className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
+              <MultiProjectDashboard />
+            </TabsContent>
 
             <TabsContent value="current" className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
               <section className="space-y-4">
