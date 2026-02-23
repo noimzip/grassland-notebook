@@ -3,7 +3,8 @@ import { supabase } from "@/lib/supabase";
 import type { Project, ProjectActivityLog, ProjectWithActivities } from "../lib/types";
 import { ActivityBoard } from "./activity-board";
 import { CreateProjectDialog } from "./create-project-dialog";
-import { LayoutGrid, Loader2, PlusCircle, AlertCircle } from "lucide-react";
+import { ProjectAnalysisDashboard } from "./project-analysis-dashboard";
+import { LayoutGrid, Loader2, PlusCircle, AlertCircle, LineChart } from "lucide-react";
 
 export function MultiProjectDashboard() {
   const [projects, setProjects] = useState<ProjectWithActivities[]>([]);
@@ -107,6 +108,16 @@ export function MultiProjectDashboard() {
         </div>
       )}
 
+      {projects.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 px-1 text-muted-foreground font-semibold uppercase tracking-wider text-xs">
+            <LineChart className="w-3 h-3" />
+            Project Insights
+          </div>
+          <ProjectAnalysisDashboard projects={projects} />
+        </section>
+      )}
+
       {projects.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-3xl bg-muted/30 gap-6">
           <div className="p-4 bg-background rounded-full shadow-sm">
@@ -121,17 +132,23 @@ export function MultiProjectDashboard() {
           <CreateProjectDialog onProjectCreated={fetchProjectsAndLogs} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-8">
-          {projects.map((project) => (
-            <ActivityBoard 
-              key={project.id} 
-              project={project} 
-              activities={project.activities} 
-              onUpdate={fetchProjectsAndLogs}
-              onDelete={handleDeleteProject}
-            />
-          ))}
-        </div>
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 px-1 text-muted-foreground font-semibold uppercase tracking-wider text-xs">
+            <LayoutGrid className="w-3 h-3" />
+            Your Grassland Boards
+          </div>
+          <div className="grid grid-cols-1 gap-8">
+            {projects.map((project) => (
+              <ActivityBoard 
+                key={project.id} 
+                project={project} 
+                activities={project.activities} 
+                onUpdate={fetchProjectsAndLogs}
+                onDelete={handleDeleteProject}
+              />
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );

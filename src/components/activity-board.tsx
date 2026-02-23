@@ -100,6 +100,13 @@ export function ActivityBoard({ project, activities, onUpdate, onDelete }: Activ
   const currentStreak = useMemo(() => {
     let streak = 0;
     let checkDate = today;
+    const todayStr = format(today, "yyyy-MM-dd");
+    
+    // If no activity today, check starting from yesterday
+    if ((activityMap.get(todayStr) || 0) === 0) {
+      checkDate = subDays(today, 1);
+    }
+
     while (true) {
       const dateStr = format(checkDate, "yyyy-MM-dd");
       const val = activityMap.get(dateStr) || 0;
@@ -107,10 +114,6 @@ export function ActivityBoard({ project, activities, onUpdate, onDelete }: Activ
         streak++;
         checkDate = subDays(checkDate, 1);
       } else {
-        if (isSameDay(checkDate, today)) {
-          checkDate = subDays(checkDate, 1);
-          continue;
-        }
         break;
       }
     }

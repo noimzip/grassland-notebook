@@ -49,6 +49,14 @@ export function calculateStats(data: ContributionEntry[]): Stats {
 
   // Calculate Current Streak
   let checkDay = today;
+  const todayStr = today.toISOString().split('T')[0];
+  const hasActivityToday = (dataMap.get(todayStr) || 0) > 0;
+  
+  // If no activity today, check yesterday
+  if (!hasActivityToday) {
+    checkDay = subDays(today, 1);
+  }
+
   while (true) {
     const dateStr = checkDay.toISOString().split('T')[0];
     const count = dataMap.get(dateStr) || 0;
@@ -57,11 +65,6 @@ export function calculateStats(data: ContributionEntry[]): Stats {
       currentStreak++;
       checkDay = subDays(checkDay, 1);
     } else {
-      // If it's today and count is 0, check yesterday
-      if (isSameDay(checkDay, today)) {
-        checkDay = subDays(checkDay, 1);
-        continue;
-      }
       break;
     }
   }
