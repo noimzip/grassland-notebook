@@ -48,6 +48,32 @@ export function MultiProjectDashboard() {
     }
   }, []);
 
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      // Delete activity logs first
+      const { error: logsError } = await supabase
+        .from("activity_logs")
+        .delete()
+        .eq("project_id", projectId);
+
+      if (logsError) throw logsError;
+
+      // Then delete the project
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", projectId);
+
+      if (error) throw error;
+      
+      // Refresh the list
+      fetchProjectsAndLogs();
+    } catch (err: any) {
+      console.error("Error deleting project:", err);
+      setError(err.message || "ボードの削除に失敗しました。");
+    }
+  };
+
   useEffect(() => {
     fetchProjectsAndLogs();
   }, [fetchProjectsAndLogs]);
@@ -102,6 +128,7 @@ export function MultiProjectDashboard() {
               project={project} 
               activities={project.activities} 
               onUpdate={fetchProjectsAndLogs}
+              onDelete={handleDeleteProject}
             />
           ))}
         </div>

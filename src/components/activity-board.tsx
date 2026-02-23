@@ -20,12 +20,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import type { Project, ProjectActivityLog } from "../lib/types";
-import { Flame, Calendar as CalendarIcon, Trophy } from "lucide-react";
+import { Flame, Calendar as CalendarIcon, Trophy, Trash2 } from "lucide-react";
 
 interface ActivityBoardProps {
   project: Project;
   activities: ProjectActivityLog[];
   onUpdate?: () => void;
+  onDelete?: (projectId: string) => void;
 }
 
 const COLOR_MAP: Record<string, { bg: string, levels: string[] }> = {
@@ -55,10 +56,12 @@ const COLOR_MAP: Record<string, { bg: string, levels: string[] }> = {
   }
 };
 
-export function ActivityBoard({ project, activities, onUpdate }: ActivityBoardProps) {
+export function ActivityBoard({ project, activities, onUpdate, onDelete }: ActivityBoardProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState<string>("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Get the last 365 days
   const today = new Date();
@@ -161,6 +164,19 @@ export function ActivityBoard({ project, activities, onUpdate }: ActivityBoardPr
     }
   };
 
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(project.id);
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to delete project:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader className="pb-2">
@@ -168,6 +184,17 @@ export function ActivityBoard({ project, activities, onUpdate }: ActivityBoardPr
           <div className="flex items-center gap-2">
             <div className={`w-3 h-3 rounded-full ${colors.bg}`} />
             <CardTitle className="text-lg font-bold">{project.title}</CardTitle>
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="sr-only">Delete project</span>
+              </Button>
+            )}
           </div>
           <div className="flex gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
@@ -266,6 +293,24 @@ export function ActivityBoard({ project, activities, onUpdate }: ActivityBoardPr
             <Button variant="outline" onClick={() => setSelectedDate(null)}>キャンセル</Button>
             <Button onClick={handleUpdateValue} disabled={isUpdating}>
               {isUpdating ? "保存中..." : "保存"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>ボードを削除しますか？</DialogTitle>
+            <DialogDescription>
+              「{project.title}」を削除してもよろしいですか？この操作は取り消せません。また、これまでのすべての記録も失われます。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>キャンセル</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "削除中..." : "ボードを削除"}
             </Button>
           </DialogFooter>
         </DialogContent>
